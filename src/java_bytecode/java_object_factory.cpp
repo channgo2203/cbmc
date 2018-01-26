@@ -695,7 +695,8 @@ static bool add_nondet_string_pointer_initialization(
   const struct_typet &struct_type =
     to_struct_type(ns.follow(to_symbol_type(obj.type())));
 
-  if(!struct_type.has_component("data") || !struct_type.has_component("length"))
+  // if no String model is loaded then we cannot construct a String object
+  if(struct_type.get_bool(ID_incomplete_class))
     return true;
 
   allocate_dynamic_object_with_decl(expr, symbol_table, loc, code);
@@ -834,17 +835,18 @@ void java_object_factoryt::gen_nondet_pointer_init(
   // and asign to `expr` the address of such object
   code_blockt non_null_inst;
 
+  bool string_init_failed = false;
   if(
     java_string_library_preprocesst::implements_java_char_sequence_pointer(
       expr.type()))
   {
-    add_nondet_string_pointer_initialization(
+    string_init_failed = add_nondet_string_pointer_initialization(
       expr,
       object_factory_parameters.max_nondet_string_length,
       object_factory_parameters.string_printable,
       symbol_table,
       loc,
-      assignments);
+      non_null_inst);
   }
   else
   {
@@ -867,8 +869,10 @@ void java_object_factoryt::gen_nondet_pointer_init(
 
   // Alternatively, if this is a void* we *must* initialise with null:
   // (This can currently happen for some cases of #exception_value)
+  // Also, if the String model is not loaded then we can only
+  // initialize to null.
   bool must_be_null=
-    subtype==empty_typet();
+    string_init_failed || subtype==empty_typet();
 
   if(must_be_null)
   {
