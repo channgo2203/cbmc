@@ -269,7 +269,7 @@ std::string gather_full_class_name(const std::string &src)
 
   class_name = erase_type_arguments(class_name);
 
-  std::replace(class_name.begin(), class_name.end(), '.', '$');
+  std::replace(class_name.begin(), class_name.end(), '$', '.');
   std::replace(class_name.begin(), class_name.end(), '/', '.');
   return class_name;
 }
